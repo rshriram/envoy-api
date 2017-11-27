@@ -5,6 +5,7 @@ option go_package = "network";
 
 import "api/filter/accesslog.proto";
 import "api/address.proto";
+import "api/rds.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -45,9 +46,16 @@ message TcpProxy {
     // is closed. A route with no criteria is valid and always produces a
     // match.
     message TCPRoute {
-      // The cluster to connect to when a the downstream network connection
-      // matches the specified criteria.
-      string cluster = 1;
+      oneof cluster_specifier {
+        // The cluster to connect to when a the downstream network connection
+        // matches the specified criteria.
+        string cluster = 1;
+        // Multiple upstream clusters can be specified for a given
+        // route. The connection is proxied to one of the upstream clusters
+        // based on weights assigned to each cluster. See traffic splitting
+        // for additional documentation.
+        WeightedCluster weighted_clusters = 2;
+      }
 
       // An optional list of IP address subnets in the form
       // “ip_address/xx”. The criteria is satisfied if the destination IP
@@ -57,7 +65,7 @@ message TcpProxy {
       // address of the downstream connection might be different from the
       // addresses on which the proxy is listening if the connection has been
       // redirected.
-      repeated CidrRange destination_ip_list = 2;
+      repeated CidrRange destination_ip_list = 3;
 
       // An optional string containing a comma-separated list of port numbers
       // or ranges. The criteria is satisfied if the destination port of the
@@ -66,21 +74,21 @@ message TcpProxy {
       // ignored. The destination port address of the downstream connection
       // might be different from the port on which the proxy is listening if
       // the connection has been redirected.
-      string destination_ports = 3;
+      string destination_ports = 4;
 
       // An optional list of IP address subnets in the form
       // “ip_address/xx”. The criteria is satisfied if the source IP address
       // of the downstream connection is contained in at least one of the
       // specified subnets. If the parameter is not specified or the list is
       // empty, the source IP address is ignored.
-      repeated CidrRange source_ip_list = 4;
+      repeated CidrRange source_ip_list = 5;
 
       // An optional string containing a comma-separated list of port numbers
       // or ranges. The criteria is satisfied if the source port of the
       // downstream connection is contained in at least one of the specified
       // ranges. If the parameter is not specified, the source port is
       // ignored.
-      string source_ports = 5;
+      string source_ports = 6;
     }
 
     // The route table for the filter. All filter instances must have a route
